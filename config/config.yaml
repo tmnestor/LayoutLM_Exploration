@@ -1,0 +1,199 @@
+# LayoutLM Document Understanding Configuration
+# This configuration supports environment variable substitution using ${VAR:default} syntax
+
+# Environment and Paths Configuration
+environment:
+  # Base directories - configurable via environment variables
+  data_dir: "${DATADIR}/layout_lm"         # Base data directory (outside codebase)
+  model_dir: "${MODELDIR:./models}"       # Base models directory
+  hf_home: "${HF_HOME:./cache/huggingface}"  # Hugging Face cache directory
+  
+  # Output and logging
+  output_dir: "${DATADIR}/layout_lm/output"
+  log_dir: "${DATADIR}/layout_lm/logs"
+  
+  # Temporary directories
+  temp_dir: "${TMPDIR:/tmp}/layoutlm"
+
+# Data Configuration
+data:
+  # Input data paths
+  raw_data_dir: "${DATADIR}/layout_lm/raw"
+  processed_data_dir: "${DATADIR}/layout_lm/processed"
+  images_dir: "${DATADIR}/layout_lm/raw/images"
+  annotations_dir: "${DATADIR}/layout_lm/raw/annotations"
+  
+  # Data processing settings
+  max_samples: null                       # null for all samples
+  train_split: 0.8                       # Training data split ratio
+  validation_split: 0.2                  # Validation data split ratio
+  
+  # Image processing
+  image_extensions: [".jpg", ".jpeg", ".png", ".tiff", ".bmp"]
+  max_image_size: [2048, 2048]          # Maximum image dimensions [width, height]
+  
+  # OCR settings
+  ocr:
+    engine: "tesseract"                   # OCR engine to use
+    config: "--oem 3 --psm 3"             # PSM 3: Fully automatic page segmentation (better for mixed content)
+    confidence_threshold: 20              # Lower threshold for better word detection
+    language: "eng"                       # OCR language
+
+# Model Configuration
+model:
+  # Model selection and paths
+  name: "microsoft/layoutlm-base-uncased" # Hugging Face model name
+  local_model_path: "${MODELDIR:./models}/layoutlm-base-uncased"  # Local model path for offline usage
+  use_local_model: true                   # Default to true for offline usage
+  
+  # Model architecture
+  num_labels: 7                          # Number of classification labels
+  max_seq_length: 512                    # Maximum sequence length
+  hidden_dropout_prob: 0.1               # Dropout probability
+  attention_probs_dropout_prob: 0.1      # Attention dropout probability
+  
+  # Model paths
+  checkpoint_dir: "${MODELDIR:./models}/checkpoints"
+  final_model_dir: "${MODELDIR:./models}/trained"
+
+# Training Configuration
+training:
+  # Training hyperparameters
+  num_epochs: 3                          # Number of training epochs
+  batch_size: 4                          # Training batch size (smaller for limited data)
+  learning_rate: 5.0e-5                  # Learning rate
+  weight_decay: 0.01                     # Weight decay for regularization
+  warmup_steps: 500                      # Number of warmup steps
+  max_grad_norm: 1.0                     # Gradient clipping norm
+  
+  # Optimization
+  optimizer: "AdamW"                     # Optimizer type
+  scheduler: "linear"                    # Learning rate scheduler
+  
+  # Training settings
+  seed: 42                               # Random seed for reproducibility
+  save_strategy: "epoch"                 # Model saving strategy
+  evaluation_strategy: "epoch"           # Evaluation strategy
+  logging_steps: 50                      # Logging frequency
+  save_total_limit: 1                    # Maximum number of checkpoints to keep
+  
+  # Mixed precision and optimization
+  fp16: false                            # Use mixed precision training
+  dataloader_num_workers: 2              # Number of data loader workers
+  dataloader_pin_memory: true            # Pin memory for data loader
+
+# Inference Configuration
+inference:
+  # Inference settings
+  batch_size: 16                         # Inference batch size
+  confidence_threshold: 0.5              # Minimum confidence for predictions
+  max_length: 512                        # Maximum sequence length for inference
+  
+  # Output settings
+  save_predictions: true                 # Save prediction results
+  save_visualizations: true              # Save visualization images
+  output_format: "json"                  # Output format: json, csv, or both
+  
+  # Visualization
+  visualization:
+    show_confidence: true                # Show confidence scores in visualizations
+    color_scheme: "default"              # Color scheme for labels
+    font_size: 8                         # Font size for annotations
+    line_width: 2                        # Bounding box line width
+
+# Postprocessing Configuration
+postprocessing:
+  # CSV output settings
+  generate_csv: true                     # Generate CSV files for each image
+  csv_output_dir: "${DATADIR}/layout_lm/output/csv_results"  # Directory for CSV files
+  
+  # CSV format settings
+  include_image_id: true                 # Include unique image identifier
+  include_block_ids: true                # Include block identifiers
+  include_word_ids: true                 # Include word identifiers
+  include_probabilities: true            # Include prediction probabilities
+  
+  # Aggregation settings
+  generate_aggregated_csv: true          # Create single aggregated CSV file
+  aggregated_filename: "all_predictions.csv"  # Name of aggregated file
+  
+  # Reporting
+  generate_summary_report: true          # Generate processing summary
+  summary_filename: "processing_summary.txt"  # Summary report filename
+  
+  # Validation
+  validate_csv_format: true              # Validate CSV format after generation
+  
+  # Column formatting
+  bbox_format: "parentheses"             # Format: "parentheses" -> "(x1, y1, x2, y2)"
+  probability_precision: 4               # Number of decimal places for probabilities
+
+# Label Configuration
+labels:
+  # Label mapping - update this for your specific use case
+  mapping:
+    0: "O"                               # Outside any entity
+    1: "B-HEADER"                        # Beginning of header
+    2: "I-HEADER"                        # Inside header
+    3: "B-QUESTION"                      # Beginning of question
+    4: "I-QUESTION"                      # Inside question
+    5: "B-ANSWER"                        # Beginning of answer
+    6: "I-ANSWER"                        # Inside answer
+  
+  # Label colors for visualization
+  colors:
+    "O": "gray"
+    "B-HEADER": "red"
+    "I-HEADER": "orange"
+    "B-QUESTION": "blue"
+    "I-QUESTION": "lightblue"
+    "B-ANSWER": "green"
+    "I-ANSWER": "lightgreen"
+
+# Logging Configuration
+logging:
+  level: "INFO"                          # Logging level: DEBUG, INFO, WARNING, ERROR
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file_logging: true                     # Enable file logging
+  console_logging: true                  # Enable console logging
+  log_file: "${DATADIR}/layout_lm/logs/layoutlm.log"
+
+# Evaluation Configuration
+evaluation:
+  # Evaluation metrics
+  metrics: ["accuracy", "precision", "recall", "f1"]
+  per_label_metrics: true                # Calculate per-label metrics
+  confusion_matrix: true                 # Generate confusion matrix
+  
+  # Evaluation settings
+  iou_threshold: 0.5                     # IoU threshold for bounding box matching
+  save_results: true                     # Save evaluation results
+  
+# System Configuration
+system:
+  # Device settings
+  device: "auto"                         # Device: auto, cpu, cuda, mps
+  cuda_visible_devices: null             # CUDA devices to use (null for all)
+  
+  # Memory and performance
+  max_memory_usage: "80%"                # Maximum memory usage percentage
+  cache_dir: "${HF_HOME:./cache/huggingface}"
+  
+  # Error handling
+  ignore_mismatched_sizes: false         # Ignore model size mismatches
+  resume_from_checkpoint: null           # Path to checkpoint to resume from
+
+# Production Configuration
+production:
+  # Production-specific settings
+  offline_mode: true                     # Default to true for offline operation
+  model_download_timeout: 600            # Model download timeout in seconds
+  max_retries: 3                         # Maximum number of retries for operations
+  
+  # Security and validation
+  validate_inputs: true                  # Validate input data
+  sanitize_outputs: true                 # Sanitize output data
+  
+  # Performance monitoring
+  profile_memory: false                  # Enable memory profiling
+  profile_time: false                    # Enable time profiling

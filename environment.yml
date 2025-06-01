@@ -1,0 +1,34 @@
+name: layoutlm_env
+channels:
+  - pytorch
+  - conda-forge
+  - huggingface
+dependencies:
+  - python=3.9
+  - pytorch
+  - torchvision
+  - transformers>=4.20.0
+  - datasets
+  - tokenizers
+  - pillow
+  - pytesseract
+  - opencv
+  - pandas
+  - numpy
+  - matplotlib
+  - seaborn
+  - jupyter
+  - notebook
+  - ipykernel
+  - tqdm
+  - scikit-learn
+  - pip
+  - pip:
+    - layoutlm
+    - detectron2
+    - pytesseract
+    - pdf2image
+    - pymupdf
+    - python-docx
+    - pdfplumber
+    - easyocr
